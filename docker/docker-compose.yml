@@ -1,0 +1,110 @@
+---
+version: '3.9'
+services:
+  postgres:
+    container_name: postgres_betsol
+    image: postgres:14.8-alpine3.18
+    command:
+      - 'postgres'
+      - '-c'
+      - 'max_connections=50'
+      - '-c'
+      - 'shared_buffers=1GB'
+      - '-c'
+      - 'effective_cache_size=4GB'
+      - '-c'
+      - 'work_mem=16MB'
+      - '-c'
+      - 'maintenance_work_mem=512MB'
+      - '-c'
+      - 'random_page_cost=1.1'
+      - '-c'
+      - 'temp_file_limit=10GB'
+      - '-c'
+      - 'log_min_duration_statement=200ms'
+      - '-c'
+      - 'idle_in_transaction_session_timeout=10s'
+      - '-c'
+      - 'lock_timeout=1s'
+      - '-c'
+      - 'statement_timeout=60s'
+      - '-c'
+      - 'shared_preload_libraries=pg_stat_statements'
+      - '-c'
+      - 'pg_stat_statements.max=10000'
+      - '-c'
+      - 'pg_stat_statements.track=all'
+    environment:
+      POSTGRES_DB: ${POSTGRES_DATABASE}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: '/var/lib/postgresql/data/pgdata'
+    volumes:
+      - ../2. Init Database:/docker-entrypoint-initdb.d
+      - betsol_db-data:/var/lib/postgresql/data
+    ports:
+      - '5435:5432'
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DATABASE}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 4G
+    networks:
+      - betsol_network
+
+  pgadmin:
+    container_name: pgadmin_betsol
+    image: dpage/pgadmin4:7.2
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    ports:
+      - '5055:80'
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+    networks:
+      - betsol_network
+
+  postgres_exporter:
+    container_name: exporter_container
+    image: prometheuscommunity/postgres-exporter:v0.10.1
+    environment:
+      DATA_SOURCE_URI: 'postgres:5435/${POSTGRES_DATABASE}?sslmode=disable'
+      DATA_SOURCE_USER: ${POSTGRES_USER}
+      DATA_SOURCE_PASS: ${POSTGRES_PASSWORD}
+      PG_EXPORTER_EXTEND_QUERY_PATH: '/etc/postgres_exporter/queries.yaml'
+    volumes:
+      - ./queries.yaml:/etc/postgres_exporter/queries.yaml:ro
+    ports:
+      - '9187:9187'
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 500M
+    networks:
+      - betsol_network
+
+volumes:
+  betsol_db-data:
+  pgadmin-data:
+
+networks:
+  betsol_network:
+    driver: bridge
