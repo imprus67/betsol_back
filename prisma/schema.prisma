@@ -8,8 +8,83 @@ datasource db {
   url      = env("POSTGRES_URI")
 }
 
-model User {
-  id       String @id @default(uuid())
-  email    String @unique
-  password String
+model Users {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  // email     String   @unique
+  name      String   @unique
+  password  String
+  role      Roles    @default(USER)
+}
+
+model Events {
+  id          Int           @id @default(autoincrement())
+  tournament  String
+  gameName    Games         @relation(fields: [gameNameId], references: [id])
+  gameNameId  Int
+  matchType   MatchType
+  timeOfStart DateTime
+  status      StatusOfEvent
+  command1    Commands      @relation("RelationForCommand1", fields: [command1Id], references: [id])
+  command1Id  Int
+  command2    Commands      @relation("RelationForCommand2", fields: [command2Id], references: [id])
+  command2Id  Int
+
+  odd1      Decimal
+  odd2      Decimal
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  contract  Contracts?
+}
+
+model Commands {
+  id               Int      @id @default(autoincrement())
+  name             String
+  gameName         Games    @relation(fields: [gameNameId], references: [id])
+  gameNameId       Int
+  logo             String
+  enentForCommand1 Events[] @relation("RelationForCommand1")
+  enentForCommand2 Events[] @relation("RelationForCommand2")
+}
+
+model Games {
+  id          Int           @id @default(autoincrement())
+  name        String        @unique
+  logo        String
+  events      Events[]
+  commands    Commands[]
+  Tournaments Tournaments[]
+}
+
+model Contracts {
+  id             Int    @id @default(autoincrement())
+  event          Events @relation(fields: [eventId], references: [id])
+  eventId        Int    @unique
+  contract_props String
+}
+
+model Tournaments {
+  id     Int    @id @default(autoincrement())
+  name   String
+  logo   String
+  game   Games  @relation(fields: [gameId], references: [id])
+  gameId Int
+}
+
+enum Roles {
+  USER
+  ADMIN
+}
+
+enum MatchType {
+  BEST_OF_1
+  BEST_OF_3
+  BEST_OF_5
+}
+
+enum StatusOfEvent {
+  WILL_START
+  ACTIVE
+  ENDED
+  ARCHIVED
 }
