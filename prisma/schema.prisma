@@ -10,11 +10,12 @@ datasource db {
 
 model Users {
   id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
   // email     String   @unique
   name      String   @unique
   password  String
   role      Roles    @default(USER)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }
 
 model Events {
@@ -24,7 +25,7 @@ model Events {
   gameNameId  Int
   matchType   MatchType
   timeOfStart DateTime
-  status      StatusOfEvent
+  status      StatusOfEvent @default(WILL_START)
   command1    Commands      @relation("RelationForCommand1", fields: [command1Id], references: [id])
   command1Id  Int
   command2    Commands      @relation("RelationForCommand2", fields: [command2Id], references: [id])
@@ -32,9 +33,9 @@ model Events {
 
   odd1      Decimal
   odd2      Decimal
+  contract  Contracts?
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
-  contract  Contracts?
 }
 
 model Commands {
@@ -45,6 +46,8 @@ model Commands {
   logo             String
   enentForCommand1 Events[] @relation("RelationForCommand1")
   enentForCommand2 Events[] @relation("RelationForCommand2")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }
 
 model Games {
@@ -54,6 +57,8 @@ model Games {
   events      Events[]
   commands    Commands[]
   Tournaments Tournaments[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }
 
 model Contracts {
@@ -61,6 +66,8 @@ model Contracts {
   event          Events @relation(fields: [eventId], references: [id])
   eventId        Int    @unique
   contract_props String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }
 
 model Tournaments {
@@ -69,6 +76,12 @@ model Tournaments {
   logo   String
   game   Games  @relation(fields: [gameId], references: [id])
   gameId Int
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Bets {
+  id     String @id @default(uuid())
 }
 
 enum Roles {
